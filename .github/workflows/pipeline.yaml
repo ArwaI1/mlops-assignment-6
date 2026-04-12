@@ -9,7 +9,6 @@ on:
       - main
 
 jobs:
-  # 1. DEPENDENCY: The lightweight linter job
   linter:
     runs-on: ubuntu-latest
     steps:
@@ -25,12 +24,10 @@ jobs:
         run: pip install flake8
       
       - name: Run Linter (Syntax check)
-        run: flake8 train.py --count --select=E9,F63,F7,F82 --show-source --statistics
+        run: flake8 train.py
 
-  # The expensive training job
   train:
-    needs: linter # Condition 1: Linter must pass first
-    # Condition 2 & 3: Must be on main branch AND commit message must contain [run-train]
+    needs: linter 
     if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[run-train]')
     runs-on: ubuntu-latest
     steps:
@@ -47,11 +44,9 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Training Script
-        # We redirect standard error (2>) to error_logs.txt to capture any failures
         run: |
           python train.py 2> error_logs.txt
 
-      # 2. FAILURE STEP: Upload error_logs.txt if the train job fails
       - name: Upload Error Logs
         if: failure()
         uses: actions/upload-artifact@v4
@@ -59,7 +54,6 @@ jobs:
           name: error-logs
           path: error_logs.txt
 
-      # 3. ALWAYS STEP: Print cleanup message regardless of success or failure
       - name: Cleanup Volumes
         if: always()
         run: |
