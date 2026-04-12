@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
   linter:
@@ -14,38 +11,25 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-      
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-      
-      - name: Install Linter
-        run: pip install flake8
-      
-      - name: Run Linter (Syntax check)
-        run: flake8 train.py
+
+      - name: Install and Run Linter
+        run: |
+          pip install flake8
+          flake8 train.py
 
   train:
-    needs: linter 
+    needs: linter
     if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[run-train]')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-
       - name: Install Dependencies
-        run: |
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Run Training Script
-        run: |
-          python train.py 2> error_logs.txt
+        run: python train.py 2> error_logs.txt
 
       - name: Upload Error Logs
         if: failure()
@@ -56,5 +40,4 @@ jobs:
 
       - name: Cleanup Volumes
         if: always()
-        run: |
-          echo "Cleaning up temporary cloud volumes..."
+        run: echo "Cleaning up temporary cloud volumes..."
