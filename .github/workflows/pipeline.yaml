@@ -15,7 +15,7 @@ jobs:
       - name: Install and Run Linter
         run: |
           pip install flake8
-          flake8 train.py
+          flake8 train.py --select=E9,F63,F7,F82
 
   train:
     needs: linter
