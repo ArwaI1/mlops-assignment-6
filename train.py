@@ -3,8 +3,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
-import mlflow
-import mlflow.pytorch
 import kagglehub
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -36,12 +34,6 @@ def main():
     parser.add_argument("--run_name", type=str, default="exp1") 
     args = parser.parse_args()
 
-    # CONNECT TO YOUR LOCAL SERVER (Fix for the missing runs in UI)
-    mlflow.set_tracking_uri("http://localhost:5000")
-
-    # MLFLOW PILLAR 1: Set Experiment Name
-    mlflow.set_experiment("A3_Arwa Mater")
-
     # Load and preprocess Kaggle dataset
     X_train, y_train = load_and_preprocess_data()
     
@@ -63,50 +55,31 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=args.learning_rate)
 
-    # MLFLOW PILLAR 2: Wrap training in start_run() AND pass the run_name!
-    with mlflow.start_run(run_name=args.run_name):
-        
-        # MLFLOW PILLAR 3: Log Parameters
-        mlflow.log_params({
-            "learning_rate": args.learning_rate,
-            "batch_size": args.batch_size,
-            "epochs": args.epochs
-        })
-        
-        # MLFLOW PILLAR 4: Add Tags
-        mlflow.set_tag("student_id", "202201623")
+    print(f"Training Run '{args.run_name}' with LR: {args.learning_rate}, Batch: {args.batch_size}")
 
-        print(f"Training Run '{args.run_name}' with LR: {args.learning_rate}, Batch: {args.batch_size}")
-
-        for epoch in range(args.epochs):
-            total_loss = 0
-            correct = 0
-            total = 0
+    for epoch in range(args.epochs):
+        total_loss = 0
+        correct = 0
+        total = 0
+        
+        for images, labels in train_loader:
+            optimizer.zero_grad()
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
             
-            for images, labels in train_loader:
-                optimizer.zero_grad()
-                outputs = model(images)
-                loss = criterion(outputs, labels)
-                loss.backward()
-                optimizer.step()
-                
-                total_loss += loss.item()
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
+            total_loss += loss.item()
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
 
-            avg_loss = total_loss / len(train_loader)
-            accuracy = correct / total
+        avg_loss = total_loss / len(train_loader)
+        accuracy = correct / total
 
-            print(f"Epoch {epoch+1} | Loss: {avg_loss:.4f} | Accuracy: {accuracy:.4f}")
+        print(f"Epoch {epoch+1} | Loss: {avg_loss:.4f} | Accuracy: {accuracy:.4f}")
 
-            # MLFLOW PILLAR 5: Live Logging
-            mlflow.log_metric("loss", avg_loss, step=epoch)
-            mlflow.log_metric("accuracy", accuracy, step=epoch)
-
-        # MLFLOW PILLAR 6: Save Model Flavor
-        mlflow.pytorch.log_model(model, "model")
-        print("Run complete and saved to MLflow!")
+    print("Run complete!")
 
 if __name__ == "__main__":
     main()
