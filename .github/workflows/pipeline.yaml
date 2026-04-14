@@ -15,6 +15,7 @@ jobs:
       - name: Install and Run Linter
         run: |
           pip install flake8
+          # E9 (Syntax Errors), F63 (Logic/Comparison Errors), F7 (Structural Syntax Errors), F82 (Undefined Variables)
           flake8 train.py --select=E9,F63,F7,F82
 
   train:
